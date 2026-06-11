@@ -1,0 +1,2 @@
+# Satellite_Communications_APCMA
+衛星通信をAPCMAで行う際に必要なシミュレーションや実機プログラムなど
