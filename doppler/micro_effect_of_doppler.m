@@ -1,4 +1,5 @@
-%整数倍のビンがドップラーシフトによって小数部に来てしまう場合の
+%ミクロ評価
+%整数倍のビンがドップラーシフトによって小数部に来てしまう場合の電力低下
 
 SF = 12;
 N = 2^SF;
@@ -20,11 +21,11 @@ max_power_dB = zeros(size(fd_bin_vec));
 for idx = 1:length(fd_bin_vec)
     fd_bin = fd_bin_vec(idx);
     fd = fd_bin * df;
-    
+
     rx_signal = tx_chirp .* exp(1i * 2 * pi * fd * t);
     dechirp_signal = rx_signal .* rx_down_chirp;
     fft_signal = fft(dechirp_signal);
-    
+
     max_power = max(abs(fft_signal).^2);
     max_power_dB(idx) = 10 * log10(max_power / ref_power);
 end
