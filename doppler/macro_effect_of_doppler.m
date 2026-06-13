@@ -1,54 +1,56 @@
 clear; close all; clc;
 
-SF = 12;
-M  = 2^SF;
-BW = 100e3;
-Fs = BW;
-df = BW / M;
+SF     = 12;
+M      = 2^SF;
+BW     = 100e3;
+df     = BW / M;
+T_slot = M / BW;
 
+n_bit  = 10;
+C      = 3 * 2^n_bit + 303;
+T_cw   = (C - 1) * T_slot;
+
+h       = 540e3;
 v_sat   = 7600;
 f_c     = 920e6;
 c_light = 3e8;
-fd_max  = (v_sat / c_light) * f_c;
+El_min  = 10;
 
-n  = (0:M-1)';
-up = exp(1j * pi * n.^2 / M);
-dn = conj(up);
+fd    = @(t) -(f_c/c_light) .* v_sat^2 .* t ./ sqrt(h^2 + (v_sat.*t).^2);
+t_max = h / (v_sat * tand(El_min));
 
-fd_vals = linspace(0, fd_max, 400);
-peak_pw = zeros(1, 400);
+fprintf('C = %d slots\n', C);
+fprintf('T_cw = %.1f s\n', T_cw);
+fprintf('T_pass = %.1f s\n', 2*t_max);
 
-for k = 1:400
-    fd = fd_vals(k);
-    rx = up .* exp(1j * 2*pi * (fd/Fs) * n);
-    n_valid = max(0, floor(M * (1 - fd/BW)));
-    rx(n_valid+1:end) = 0;
-    pw = abs(fft(rx .* dn)).^2;
-    peak_pw(k) = max(pw);
+pulse_slots = round(linspace(0, C-1, 9));
+
+t_starts = linspace(-t_max, t_max - T_cw, 300);
+
+req_jt = zeros(1, length(t_starts));
+for k = 1:length(t_starts)
+    t_p       = t_starts(k) + pulse_slots * T_slot;
+    bins      = round(fd(t_p) / df);
+    req_jt(k) = max(bins) - min(bins);
 end
 
-loss_sim  = 10 * log10(peak_pw / peak_pw(1));
-loss_theo = 20 * log10(1 - fd_vals / BW);
+fprintf('Max required JT = %d bins\n', max(req_jt));
 
-elev      = linspace(0, 90, 300);
-fd_elev   = (v_sat / c_light) * f_c * cosd(elev);
-loss_elev = 20 * log10(1 - fd_elev / BW);
+t_pass = linspace(-t_max, t_max, 500);
 
-figure('Position', [100 100 900 400]);
+figure('Position', [100 100 1000 400]);
 
 subplot(1,2,1);
-plot(fd_vals/1e3, loss_sim,  'b-',  'LineWidth', 2); hold on;
-plot(fd_vals/1e3, loss_theo, 'r--', 'LineWidth', 1.5);
-xlabel('Doppler Shift f_d [kHz]');
-ylabel('Peak Power Loss [dB]');
-title('Eval B: BPF Energy Loss vs Doppler Shift');
-legend('Simulation', 'Theory: 20log_{10}(1-f_d/BW)', 'Location', 'southwest');
+plot(t_pass, fd(t_pass)/1e3, 'b-', 'LineWidth', 1.5);
+xlabel('time [s]');
+ylabel('Doppler shift [kHz]');
+title('Doppler profile (h=540km)');
 grid on;
 
 subplot(1,2,2);
-plot(elev, loss_elev, 'g-', 'LineWidth', 2);
-set(gca, 'XDir', 'reverse');
-xlabel('Elevation Angle [deg]');
-ylabel('Peak Power Loss [dB]');
-title('Eval B: BPF Energy Loss vs Elevation Angle');
+plot(t_starts, req_jt, 'r-', 'LineWidth', 1.5); hold on;
+yline(3, 'k--');
+xlabel('TX start time [s]');
+ylabel('jitter torelance [bins]');
+title(sprintf('Eval C: Required JT  (SF=%d, n=%d, C=%d)', SF, n_bit, C));
 grid on;
