@@ -1,4 +1,8 @@
-clear; close all; clc;
+%BPF時にどれだけFFT後のピーク電力が減少するのかを示すシミュレーション
+
+clear; 
+close all; 
+clc;
 
 SF = 12;
 M  = 2^SF;
