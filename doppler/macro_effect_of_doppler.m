@@ -41,8 +41,8 @@ plot(fd_vals/1e3, loss_sim,  'b-',  'LineWidth', 2); hold on;
 plot(fd_vals/1e3, loss_theo, 'r--', 'LineWidth', 1.5);
 xlabel('Doppler Shift f_d [kHz]');
 ylabel('Peak Power Loss [dB]');
-title('Eval B: BPF Energy Loss vs Doppler Shift');
-legend('Simulation', 'Theory: 20log_{10}(1-f_d/BW)', 'Location', 'southwest');
+title('BPF Energy Loss vs Doppler Shift');
+legend('Simulation', 'Theory', 'Location', 'southwest');
 grid on;
 
 subplot(1,2,2);
@@ -50,5 +50,5 @@ plot(elev, loss_elev, 'g-', 'LineWidth', 2);
 set(gca, 'XDir', 'reverse');
 xlabel('Elevation Angle [deg]');
 ylabel('Peak Power Loss [dB]');
-title('Eval B: BPF Energy Loss vs Elevation Angle');
+title('BPF Energy Loss vs Elevation Angle');
 grid on;
