@@ -1,4 +1,7 @@
-clear; clc; close all;
+%地球の曲率を考慮したもの
+clear; 
+clc;
+close all;
 
 c  = 3e8;
 GM = 3.986e14;
@@ -12,7 +15,7 @@ w_sat = v_sat/(Re+h);
 
 t = -300:0.1:300;
 
-Emax_list = [30 50 70 90];
+Emax_list = [20 30 50 70 90];
 colors = lines(length(Emax_list));
 
 figure;
@@ -55,9 +58,9 @@ legend("Emax="+string(Emax_list)+"deg", 'Location','best');
 subplot(3,1,2);
 yline(0,'--k'); grid on;
 xlabel('time [s]'); ylabel('Doppler [kHz]');
-title('Doppler Shift (curved Earth)');
+title('Doppler Shift');
 
 subplot(3,1,3);
 grid on;
 xlabel('time [s]'); ylabel('Doppler rate [Hz/s]');
-title('Doppler Rate (curved Earth)');
+title('Doppler Rate');
