@@ -1,6 +1,4 @@
-clear; 
-clc; 
-close all;
+clear; clc; close all;
 
 h       = 540e3;
 v_sat   = 7600;
@@ -41,6 +39,7 @@ for si = 1:length(SF_list)
     plot(El_range, shift_vs_El, 'LineWidth', 1.5, 'Color', colors(si,:));
 end
 grid on;
+xlim([El_min 90]);
 xlabel('elevation angle [deg]');
 ylabel('absolute bin shift [bins]');
 title('Absolute Bin Shift vs Elevation Angle');
