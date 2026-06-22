@@ -41,12 +41,12 @@ loss_elev = 20 * log10(1 - fd_elev / BW);
 figure('Position', [100 100 900 400]);
 
 subplot(1,2,1);
-plot(fd_vals/1e3, loss_sim,  'b-',  'LineWidth', 2); hold on;
-plot(fd_vals/1e3, loss_theo, 'r--', 'LineWidth', 1.5);
+%plot(fd_vals/1e3, loss_sim,  'b-',  'LineWidth', 2); hold on;
+plot(fd_vals/1e3, loss_theo, 'b-', 'LineWidth', 1.5);
 xlabel('Doppler Shift f_d [kHz]');
 ylabel('Peak Power Loss [dB]');
 title('BPF Energy Loss vs Doppler Shift');
-legend('Simulation', 'Theory', 'Location', 'southwest');
+%legend('Simulation', 'Theory', 'Location', 'southwest');
 grid on;
 
 subplot(1,2,2);
