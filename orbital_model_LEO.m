@@ -29,7 +29,7 @@ tau_vis = tau(visible);
 El_vis  = El(visible) * 180/pi;
 dfd_dt_vis = dfd_dt(visible);
 
-font_size = 16;
+font_size = 14;
 
 figure;
 subplot(3,1,1);
@@ -65,7 +65,7 @@ subplot(2,1,2);
 plot(t_vis, (tau_vis - min(tau_vis))*1e3, 'r', 'LineWidth', 1.5);
 grid on;
 xlabel('time [s]'); ylabel('latency [ms]');
-title('Change in Propagation Delay');
+title('Propagation Delay Variation (天頂を基準)');
 set(gca, 'FontSize', font_size);
 
 fprintf('Satellite Speed         : %.1f km/s\n', v_sat/1e3);
