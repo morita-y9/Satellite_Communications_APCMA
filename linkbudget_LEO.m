@@ -1,5 +1,9 @@
 %LEOにおけるリンクバジェット計算
-clear; clc; close all;
+%現在は受信アンテナ利得を6.5dBiとしている
+
+clear; 
+clc; 
+close all;
 
 c   = 3e8;
 GM  = 3.986e14;

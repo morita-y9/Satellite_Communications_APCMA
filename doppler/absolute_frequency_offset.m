@@ -1,22 +1,17 @@
 clear; 
 clc; 
 close all;
-
 h       = 540e3;
 v_sat   = 7600;
 f_c     = 920e6;
 c_light = 3e8;
 El_min  = 10;
-
 BW = 100e3;
 t_max = h / (v_sat * tand(El_min));
 fd    = @(t) -(f_c/c_light) .* v_sat^2 .* t ./ sqrt(h^2 + (v_sat.*t).^2);
-
 SF_list = 7:12;
 El_range = linspace(El_min, 90, 200);
-
 colors = lines(length(SF_list));
-
 figure('Position', [100 100 1000 400]);
 
 subplot(1,2,1);
@@ -41,6 +36,8 @@ for si = 1:length(SF_list)
     plot(El_range, shift_vs_El, 'LineWidth', 1.5, 'Color', colors(si,:));
 end
 grid on;
+set(gca, 'FontSize', 24);
+xlim([El_min, 90]);
 xlabel('elevation angle [deg]');
 ylabel('absolute bin shift [bins]');
 title('Absolute Bin Shift vs Elevation Angle');

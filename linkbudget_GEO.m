@@ -10,7 +10,7 @@ f = 9.2e8;
 %距離パラメータ
 d_GEO = 35786e3;
 d_LEO = 1760e3;
-L = 20*log10(4*pi*d_LEO*f/c);
+L = 20*log10(4*pi*d_GEO*f/c);
 k = 1.38e-23;
 lambda = c/f;
 Gt = 1;

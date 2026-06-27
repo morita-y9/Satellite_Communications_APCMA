@@ -1,41 +1,48 @@
 clear; clc; close all;
+
 c   = 3e8;
 GM  = 3.986e14;
 Re  = 6.371e6;
 fc  = 920e6;
 h   = 540e3;
-
 El_min = 10;
+
 SF = 12;
 BW = 100e3;
 M  = 2^SF;
 T_slot = M / BW;
+
 v_sat = sqrt(GM / (Re + h));
 w_sat = v_sat / (Re + h);
 
-t = -300 : 0.01 : 300;
+t = -300 : 0.1 : 300;
 alpha = w_sat .* t;
 
 d = sqrt(Re^2 + (Re+h)^2 - 2*Re*(Re+h).*cos(alpha));
 El = asin(((Re+h)^2 - Re^2 - d.^2) ./ (2*Re.*d)) * 180/pi;
+
 ddot = Re*(Re+h)*sin(alpha)*w_sat ./ d;
 fd   = -(fc/c) .* ddot;
 dfd_dt = gradient(fd, t);
 tau  = d / c;
+dtau_dt = gradient(tau, t);
 
 visible = El >= El_min;
 El_vis      = El(visible);
 fd_vis      = fd(visible);
 dfd_dt_vis  = dfd_dt(visible);
 tau_vis     = tau(visible);
+dtau_dt_vis = dtau_dt(visible);
 
-font_size = 24;
+font_size = 14;
 
 [El_sorted, idx_sort] = sort(El_vis);
 fd_sorted      = fd_vis(idx_sort);
 dfd_dt_sorted  = dfd_dt_vis(idx_sort);
 tau_sorted     = tau_vis(idx_sort);
+dtau_dt_sorted = dtau_dt_vis(idx_sort);
 
+slot_shift_per_slot = abs(dtau_dt_sorted) * T_slot * 1e6;
 
 figure;
 subplot(2,1,1);
@@ -44,28 +51,31 @@ grid on;
 xlabel('elevation angle [deg]'); ylabel('|Doppler| [kHz]');
 title('Doppler Shift');
 set(gca, 'FontSize', font_size);
+
 subplot(2,1,2);
 plot(El_sorted, abs(dfd_dt_sorted), 'm', 'LineWidth', 1.5);
 grid on;
 xlabel('elevation angle [deg]'); ylabel('Doppler rate [Hz/s]');
-title('Doppler Rate');
+title('Doppler Rate vs Elevation Angle');
 set(gca, 'FontSize', font_size);
+
 figure;
 subplot(2,1,1);
 plot(El_sorted, (tau_sorted - min(tau_sorted))*1e3, 'r', 'LineWidth', 1.5);
 grid on;
 xlabel('elevation angle [deg]'); ylabel('delay [ms]');
-title('Propagation Delay');
+title('Propagation Delay vs Elevation Angle');
 set(gca, 'FontSize', font_size);
+
 subplot(2,1,2);
-plot(El_sorted, (tau_sorted - min(tau_sorted))*1e3, 'r', 'LineWidth', 1.5);
+plot(El_sorted, slot_shift_per_slot, 'c', 'LineWidth', 1.5);
 grid on;
-xlabel('elevation angle [deg]'); ylabel('delay variation [ms]');
-title('Delay Variation');
+xlabel('elevation angle [deg]'); ylabel('slot timing shift [\mus per slot]');
+title('Pulse Timing Shift per Slot vs Elevation Angle');
 set(gca, 'FontSize', font_size);
+
 fprintf('Satellite Speed         : %.1f km/s\n', v_sat/1e3);
 fprintf('Maximum Doppler Shift   : ±%.1f kHz\n', max(abs(fd_vis))/1e3);
 fprintf('Max Doppler Rate         : %.1f Hz/s\n', max(abs(dfd_dt_vis)));
 fprintf('Delay Variation Range   : %.3f ms (over entire pass)\n', (max(tau_vis)-min(tau_vis))*1e3);
-fprintf('T_slot                   : %.3f ms\n', T_slot*1e3);
-fprintf('Ratio (delay/slot)       : %.1f %%\n', (max(tau_vis)-min(tau_vis))/T_slot*100);
+fprintf('Max Timing Shift per Slot: %.4f us (T_slot=%.2f ms)\n', max(slot_shift_per_slot), T_slot*1e3);
