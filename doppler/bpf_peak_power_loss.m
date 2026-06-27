@@ -1,27 +1,19 @@
-%BPF時にどれだけFFT後のピーク電力が減少するのかを示すシミュレーション
-
-clear; 
-close all; 
-clc;
+clear; close all; clc;
 
 SF = 12;
 M  = 2^SF;
 BW = 100e3;
 Fs = BW;
 df = BW / M;
-
 v_sat   = 7600;
 f_c     = 920e6;
 c_light = 3e8;
 fd_max  = (v_sat / c_light) * f_c;
-
 n  = (0:M-1)';
 up = exp(1j * pi * n.^2 / M);
 dn = conj(up);
-
 fd_vals = linspace(0, fd_max, 400);
 peak_pw = zeros(1, 400);
-
 for k = 1:400
     fd = fd_vals(k);
     rx = up .* exp(1j * 2*pi * (fd/Fs) * n);
@@ -30,29 +22,27 @@ for k = 1:400
     pw = abs(fft(rx .* dn)).^2;
     peak_pw(k) = max(pw);
 end
-
 loss_sim  = 10 * log10(peak_pw / peak_pw(1));
 loss_theo = 20 * log10(1 - fd_vals / BW);
-
 elev      = linspace(0, 90, 300);
 fd_elev   = (v_sat / c_light) * f_c * cosd(elev);
 loss_elev = 20 * log10(1 - fd_elev / BW);
-
+font_size = 14;
 figure('Position', [100 100 900 400]);
-
 subplot(1,2,1);
-%plot(fd_vals/1e3, loss_sim,  'b-',  'LineWidth', 2); hold on;
-plot(fd_vals/1e3, loss_theo, 'b-', 'LineWidth', 1.5);
-xlabel('Doppler Shift f_d [kHz]');
+plot(fd_vals/1e3, loss_sim,  'b-',  'LineWidth', 2); hold on;
+plot(fd_vals/1e3, loss_theo, 'r--', 'LineWidth', 1.5);
+xlabel('Doppler Shift [kHz]');
 ylabel('Peak Power Loss [dB]');
-title('BPF Energy Loss vs Doppler Shift');
-%legend('Simulation', 'Theory', 'Location', 'southwest');
+title('Energy Loss vs Doppler Shift (macro)' );
+legend('Simulation', 'Theory', 'Location', 'southwest');
 grid on;
-
+set(gca, 'FontSize', font_size);
 subplot(1,2,2);
 plot(elev, loss_elev, 'g-', 'LineWidth', 2);
 set(gca, 'XDir', 'reverse');
 xlabel('Elevation Angle [deg]');
 ylabel('Peak Power Loss [dB]');
-title('BPF Energy Loss vs Elevation Angle');
+title('Energy Loss vs Elevation Angle (macro)');
 grid on;
+set(gca, 'FontSize', font_size);
