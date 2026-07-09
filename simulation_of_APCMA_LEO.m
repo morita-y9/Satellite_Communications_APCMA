@@ -13,7 +13,8 @@ El_min  = 10;
 
 M      = 2^SF;
 T_slot = M / BW;
-C      = 3 * 2^n_bit + 303;
+%C      = 3 * 2^n_bit + 303;
+C = 19;
 
 n  = (0:M-1).';
 up = exp(1j * pi * n.^2 / M);
