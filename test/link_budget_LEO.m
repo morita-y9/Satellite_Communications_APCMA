@@ -49,3 +49,4 @@ fprintf('Noise floor (100kHz) = %.2f dBm\n', N0_dBm_Hz + 10*log10(BW));
 fprintf('Pt_dBm               = %.2f dBm\n', Pt_dBm);
 fprintf('Pr El=10deg        = %.2f dBm\n', Pr_dBm(find(El>=10,1)));
 fprintf('Pr El=90deg        = %.2f dBm\n', Pr_dBm(end));
+
