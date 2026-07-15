@@ -5,20 +5,23 @@ Gt       = 1.0;
 Gr0      = 6.0;
 NF       = 4.0;
 HPBW     = 80;
-fontSize = 14;
+
+fontSize = 18
+;
 
 c_light = 3e8;
 GM  = 3.986e14;
 Re  = 6.371e6;
 fc  = 920e6;
 h   = 540e3;
-BW  = 100e3;
+k   = 1.380649e-23;
 T0  = 290;
-k_dB = -228.6;
+BW  = 100e3;
+v_sat = sqrt(GM/(Re+h));
 
-v_sat  = sqrt(GM/(Re+h));
-Pt_dBW = 10*log10(Pt_mW/1000);
-EIRP   = Pt_dBW + Gt;
+Pt_dBm = 10*log10(Pt_mW);
+N0     = 10*log10(k*T0*1000);
+Nf     = N0 + 10*log10(BW) + NF;
 
 El   = linspace(1, 90, 500);
 El_r = El * pi/180;
@@ -27,26 +30,31 @@ d_m    = sqrt((Re+h)^2 - (Re*cos(El_r)).^2) - Re*sin(El_r);
 lambda = c_light/fc;
 FSPL   = 20*log10(4*pi*d_m/lambda);
 
+L_iono = 1.0;
+L_pol  = 3.0;
+
 gamma_sat = asin(Re * cos(El_r) / (Re+h));
 L_scan    = 12 * (gamma_sat*180/pi / HPBW).^2;
 Gr_eff    = Gr0 - L_scan;
 
-T_sys = T0 * 10^(NF/10);
-GT    = Gr_eff - 10*log10(T_sys);
+L_impl = 1.5;
 
-CNo = EIRP - FSPL + GT - k_dB;
+fd        = (v_sat/c_light) * fc * cos(El_r);
+L_doppler = -20*log10(1 - abs(fd)/BW);
+
+Pr_apcma = Pt_dBm + Gt + Gr_eff - FSPL - L_iono - L_pol - L_impl - L_doppler;
 
 SF_list = [7 10 12];
 SNR_req = [-7.5 -12.5 -15 -17.5 -20];
-CNo_req = SNR_req + 10*log10(BW);
+Sens    = Nf + SNR_req;
 
 figure;
 colors = lines(length(SF_list));
 hold on;
 for i = 1:length(SF_list)
-    plot(El, CNo-CNo_req(i), 'LineWidth',1.8, 'Color',colors(i,:), 'DisplayName',sprintf('SF=%d',SF_list(i)));
+    plot(El, Pr_apcma-Sens(i), 'LineWidth',1.8, 'Color',colors(i,:), 'DisplayName',sprintf('SF=%d',SF_list(i)));
 end
-yline(0, '-k', 'LineWidth',1.5);
+
 grid on;
 xlabel('Elevation angle [deg]', 'FontSize', fontSize);
 ylabel('Link margin [dB]', 'FontSize', fontSize);
