@@ -29,7 +29,7 @@ tau_vis = tau(visible);
 El_vis  = El(visible) * 180/pi;
 dfd_dt_vis = dfd_dt(visible);
 
-font_size = 14;
+font_size = 24;
 
 figure;
 subplot(3,1,1);

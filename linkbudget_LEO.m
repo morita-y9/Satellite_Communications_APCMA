@@ -46,40 +46,21 @@ SNR_dB = CN0_dB - 10*log10(BW_Hz);
 figure; hold on; grid on;
 plot(el_deg, SNR_dB, 'k', 'LineWidth', lw, 'DisplayName', 'Received SNR');
 colors = lines(length(SF_list));
+
+hold on;
+
+plot(El, SNR, 'k-', 'LineWidth', 2.5, 'DisplayName', 'Received SNR');
+
 for i = 1:length(SF_list)
-    thr = SNRreq_list(i) + L_sysmargin_dB;
-    yline(thr, '--', sprintf('SF%d', SF_list(i)), ...
-        'Color', colors(i,:), 'LineWidth', lw, 'FontSize', fsize, ...
-        'LabelHorizontalAlignment', 'left', 'DisplayName', sprintf('SF%d threshold', SF_list(i)));
+    yline(SNR_req(i), '--', sprintf('SF=%d', SF_list(i)), ...
+        'LineWidth', 1.8, 'Color', colors(i,:), ...
+        'FontSize', fontSize-10, 'LabelHorizontalAlignment', 'left', ...
+        'HandleVisibility', 'off');
 end
 
-xlabel('Elevation angle [deg]');
-ylabel('SNR [dB]');
-legend('Location', 'best');
-set(gca, 'FontSize', fsize);
-
-el_r    = deg2rad(el_target_deg);
-d_t     = -Re_km*sin(el_r) + sqrt((Re_km*sin(el_r))^2 + h_km^2 + 2*Re_km*h_km);
-FSPL_t  = 20*log10(4*pi*(d_t*1e3)*fc_Hz/3e8);
-gamma_t = rad2deg(asin(Re_km*cos(el_r)/(Re_km + h_km)));
-Lscan_t = 12*(gamma_t/HPBW_deg)^2;
-CN0_t   = EIRP_dBW - FSPL_t - Lscan_t - L_margin_dB + GT_dBK - k_dB;
-SNR_t   = CN0_t - 10*log10(BW_Hz);
-
-fprintf('--- LEO uplink @ elevation %.1f deg ---\n', el_target_deg);
-fprintf('Slant range       : %.1f km\n', d_t);
-fprintf('EIRP              : %.2f dBW\n', EIRP_dBW);
-fprintf('FSPL              : %.2f dB\n', FSPL_t);
-fprintf('Off-nadir angle   : %.2f deg\n', gamma_t);
-fprintf('Scan loss         : %.2f dB\n', Lscan_t);
-fprintf('Array gain (NR=%d) : %.2f dB\n', NR, G_array_dB);
-fprintf('Tsys              : %.1f K\n', Tsys_K);
-fprintf('G/T               : %.2f dB/K\n', GT_dBK);
-fprintf('C/N0              : %.2f dB-Hz\n', CN0_t);
-fprintf('Received SNR      : %.2f dB\n', SNR_t);
-fprintf('\n');
-for i = 1:length(SF_list)
-    thr = SNRreq_list(i) + L_sysmargin_dB;
-    fprintf('SF%-2d  required %.1f dB (+sys %.1f = %.1f)  ->  %+.2f dB\n', ...
-        SF_list(i), SNRreq_list(i), L_sysmargin_dB, thr, SNR_t - thr);
-end
+grid on;
+xlabel('Elevation angle [deg]', 'FontSize', fontSize);
+ylabel('SNR [dB]', 'FontSize', fontSize);
+title('SNR vs Elevation Angle', 'FontSize', fontSize);
+legend('Location', 'southeast', 'FontSize', fontSize-2);
+hold off;

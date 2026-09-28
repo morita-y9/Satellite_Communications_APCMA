@@ -1,77 +1,69 @@
 clear; clc; close all;
-
 c   = 3e8;
 GM  = 3.986e14;
 Re  = 6.371e6;
 fc  = 920e6;
 h   = 540e3;
+k_dB = -228.6;
+Pt_mW = 20;
+Gt   = 1.0;
+Gr0  = 6.0;
+NR   = 9;
+NF   = 4.0;
+T0   = 290;
+BW   = 100e3;
+HPBW = 80;
+L_margin = 6.0;
+font_size = 60;
 
-El_min = 10;
-SF = 12;
-n_bit = 10;
-BW = 100e3;
-M  = 2^SF;
-T_slot = M / BW;
-C = 3*2^n_bit + 303;
-T_cw = (C-1)*T_slot;
+Pt_dBW = 10*log10(Pt_mW/1000);
+EIRP   = Pt_dBW + Gt;
 
-v_sat = sqrt(GM / (Re + h));
-w_sat = v_sat / (Re + h);
+El   = linspace(1, 90, 500);
+El_r = El * pi/180;
 
-t = -300 : 0.01 : 300;
-alpha = w_sat .* t;
+d      = sqrt((Re+h)^2 - (Re*cos(El_r)).^2) - Re*sin(El_r);
+lambda = c/fc;
+FSPL   = 20*log10(4*pi*d/lambda);
 
-d = sqrt(Re^2 + (Re+h)^2 - 2*Re*(Re+h).*cos(alpha));
-El = asin(((Re+h)^2 - Re^2 - d.^2) ./ (2*Re.*d)) * 180/pi;
-ddot = Re*(Re+h)*sin(alpha)*w_sat ./ d;
-fd   = -(fc/c) .* ddot;
-dfd_dt = gradient(fd, t);
-tau  = d / c;
+gamma  = asin(Re*cos(El_r)/(Re+h)) * 180/pi;
+L_scan = 12 * (gamma/HPBW).^2;
 
-visible = El >= El_min;
-El_vis     = El(visible);
-fd_vis     = fd(visible);
-dfd_dt_vis = dfd_dt(visible);
-t_vis      = t(visible);
-tau_vis    = tau(visible);
+Gr_eff = Gr0 + 10*log10(NR) - L_scan;
+T_sys  = T0 * 10^(NF/10);
+GT     = Gr_eff - 10*log10(T_sys);
 
-font_size = 24;
+CNo = EIRP - FSPL + GT - k_dB - L_margin;
+SNR = CNo - 10*log10(BW);
 
-[El_sorted, idx_sort] = sort(El_vis);
-fd_sorted     = fd_vis(idx_sort);
-dfd_dt_sorted = dfd_dt_vis(idx_sort);
-
-figure;
-subplot(2,1,1);
-plot(El_sorted, abs(fd_sorted)/1e3, 'b', 'LineWidth', 1.5);
-grid on;
-xlabel('elevation angle [deg]'); ylabel('|Doppler| [kHz]');
-title('Doppler Shift');
-set(gca, 'FontSize', font_size);
-
-subplot(2,1,2);
-plot(El_sorted, abs(dfd_dt_sorted), 'm', 'LineWidth', 1.5);
-grid on;
-xlabel('elevation angle [deg]'); ylabel('Doppler rate [Hz/s]');
-title('Doppler Rate');
-set(gca, 'FontSize', font_size);
+SF_list = [7 10 12];
+SNR_req = [-7.5 -15 -20];
 
 figure;
-plot(t_vis, (tau_vis - min(tau_vis))*1e3, 'r', 'LineWidth', 1.5);
+plot(El, SNR, 'k', 'LineWidth', 2);
+hold on;
+colors = lines(length(SF_list));
+for i = 1:length(SF_list)
+    plot(El, SNR_req(i)*ones(size(El)), '--', 'Color', colors(i,:), 'LineWidth', 3.0);
+end
 grid on;
-xlabel('time [s]'); ylabel('delay [ms]');
-title('Propagation Delay');
+xlabel('elevation angle [deg]'); ylabel('SNR [dB]');
+title('Received SNR');
+legend(['Received SNR', arrayfun(@(s) sprintf('SF=%d', s), SF_list, 'UniformOutput', false)], ...
+       'Location', 'southeast');
 set(gca, 'FontSize', font_size);
+hold off;
 
-t_start = t_vis(t_vis + T_cw <= max(t_vis));
-alpha_s = w_sat * t_start;
-alpha_e = w_sat * (t_start + T_cw);
-d_s = sqrt(Re^2 + (Re+h)^2 - 2*Re*(Re+h)*cos(alpha_s));
-d_e = sqrt(Re^2 + (Re+h)^2 - 2*Re*(Re+h)*cos(alpha_e));
-delay_change = abs(d_e - d_s) / c * 1e3;
-
-fprintf('Satellite Speed         : %.1f km/s\n', v_sat/1e3);
-fprintf('Maximum Doppler Shift   : ±%.1f kHz\n', max(abs(fd_vis))/1e3);
-fprintf('Max Doppler Rate         : %.1f Hz/s\n', max(abs(dfd_dt_vis)));
-fprintf('T_cw                     : %.1f s\n', T_cw);
-fprintf('Max delay change within one codeword = %.3f ms\n', max(delay_change));
+for i = 1:length(SF_list)
+    idx = find(SNR >= SNR_req(i), 1);
+    if isempty(idx)
+        fprintf('SF%-2d : not closed\n', SF_list(i));
+    else
+        fprintf('SF%-2d : closes above %.1f deg\n', SF_list(i), El(idx));
+    end
+end
+fprintf('Slant range at 10 deg    : %.0f km\n', ...
+        interp1(El, d, 10)/1e3);
+fprintf('Scan loss at 10 deg      : %.1f dB\n', interp1(El, L_scan, 10));
+fprintf('SNR at 10 deg            : %.1f dB\n', interp1(El, SNR, 10));
+fprintf('SNR at 90 deg            : %.1f dB\n', SNR(end));
