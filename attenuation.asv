@@ -1,0 +1,22 @@
+clear; clc;
+
+fsize = 24;
+
+att_sf7  = [-10 -9 -8 -7 -6 -5 -4 -3 0 1];
+snr_sf7  = [0 10 24 65 94 98 99 100 100 100];
+
+att_sf10 = [-16 -15 -14 -13 -10 -5 0 1];
+snr_sf10 = [25 15 5 -5 -15];
+
+att_sf12 = [-15 -14 -13 -12 -9 -4 0 1];
+snr_sf12 = [0 0 23 83 95 ];
+
+figure; hold on; grid on;
+plot(att_sf7,  snr_sf7,  '-o', 'LineWidth', 1.5, 'DisplayName', 'SF7');
+plot(att_sf10, snr_sf10, '-s', 'LineWidth', 1.5, 'DisplayName', 'SF10');
+plot(att_sf12, snr_sf12, '-^', 'LineWidth', 1.5, 'DisplayName', 'SF12');
+
+xlabel('Attenuation [dB]');
+ylabel('SNR [dB]');
+legend('Location', 'best');
+set(gca, 'FontSize', fsize);

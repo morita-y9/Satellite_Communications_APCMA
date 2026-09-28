@@ -1,52 +1,85 @@
-Pt_mW    = 20;
-Gt       = 1.0;
-Gr0      = 6.0;
-NR       = 9;
-NF       = 4.0;
-T0       = 290;
-BW       = 100e3;
-fc       = 920e6;
-h        = 540e3;
-Re       = 6.371e6;
-GM       = 3.986e14;
-c_light  = 3e8;
-k_dB     = -228.6;
-fontSize = 24０;
+clear; clc;
 
-HPBW     = 80;
-L_margin = 6.0;
+fsize = 24;
+lw    = 2.0;
 
-v_sat  = sqrt(GM/(Re+h));
-Pt_dBW = 10*log10(Pt_mW/1000);
-EIRP   = Pt_dBW + Gt;
-El   = linspace(1, 90, 500);
-El_r = El * pi/180;
-d_m    = sqrt((Re+h)^2 - (Re*cos(El_r)).^2) - Re*sin(El_r);
-lambda = c_light/fc;
-FSPL   = 20*log10(4*pi*d_m/lambda);
-gamma_sat = asin(Re * cos(El_r) / (Re+h));
-L_scan    = 12 * (gamma_sat*180/pi / HPBW).^2;
-Gr_array  = Gr0 + 10*log10(NR);
-Gr_eff    = Gr_array - L_scan;
-T_sys = T0 * 10^(NF/10);
-GT    = Gr_eff - 10*log10(T_sys);
-CNo = EIRP - FSPL + GT - k_dB - L_margin;
+Pt_dBm    = 13.0;
+Gt_dBi    = 1.0;
+Gr0_dBi   = 6.0;
+NR        = 9;
+NF_dB     = 4.0;
+HPBW_deg  = 80.0;
+BW_Hz     = 100e3;
+fc_Hz     = 920e6;
+h_km      = 540;
+Re_km     = 6371;
+T_ant_K   = 290;
+T0_K      = 290;
+k_dB      = -228.6;
 
-SF_list = [7 10 12];
-SNR_req = [-7.5 -15 -20];
-CNo_req = SNR_req + 10*log10(BW);
+L_margin_dB    = 6.0;
+L_sysmargin_dB = 6.0;
 
+SF_list     = [7 10 12];
+SNRreq_list = [-7.5 -15.0 -20.0];
 
-figure;
+el_target_deg = 10;
+el_deg = linspace(5, 90, 500);
+
+G_array_dB = 10*log10(NR);
+EIRP_dBW   = (Pt_dBm - 30) + Gt_dBi;
+
+F_lin  = 10^(NF_dB/10);
+Tsys_K = T_ant_K + T0_K*(F_lin - 1);
+GT_dBK = (Gr0_dBi + G_array_dB) - 10*log10(Tsys_K);
+
+el_rad  = deg2rad(el_deg);
+d_km    = -Re_km*sin(el_rad) + sqrt((Re_km*sin(el_rad)).^2 + h_km^2 + 2*Re_km*h_km);
+FSPL_dB = 20*log10(4*pi*(d_km*1e3)*fc_Hz/3e8);
+
+gamma_deg = rad2deg(asin(Re_km*cos(el_rad)/(Re_km + h_km)));
+L_scan_dB = 12*(gamma_deg/HPBW_deg).^2;
+
+CN0_dB = EIRP_dBW - FSPL_dB - L_scan_dB - L_margin_dB + GT_dBK - k_dB;
+SNR_dB = CN0_dB - 10*log10(BW_Hz);
+
+figure; hold on; grid on;
+plot(el_deg, SNR_dB, 'k', 'LineWidth', lw, 'DisplayName', 'Received SNR');
 colors = lines(length(SF_list));
-hold on;
 for i = 1:length(SF_list)
-    plot(El, CNo-CNo_req(i), 'LineWidth',1.8, 'Color',colors(i,:), 'DisplayName',sprintf('SF=%d',SF_list(i)));
+    thr = SNRreq_list(i) + L_sysmargin_dB;
+    yline(thr, '--', sprintf('SF%d', SF_list(i)), ...
+        'Color', colors(i,:), 'LineWidth', lw, 'FontSize', fsize, ...
+        'LabelHorizontalAlignment', 'left', 'DisplayName', sprintf('SF%d threshold', SF_list(i)));
 end
-yline(0, '-k', 'LineWidth',1.5);
-grid on;
-xlabel('Elevation angle [deg]', 'FontSize', fontSize);
-ylabel('Link margin [dB]', 'FontSize', fontSize);
-title('Link Margin vs Elevation Angle', 'FontSize', fontSize);
-legend('Location','best','FontSize',fontSize-2);
-hold off;
+
+xlabel('Elevation angle [deg]');
+ylabel('SNR [dB]');
+legend('Location', 'best');
+set(gca, 'FontSize', fsize);
+
+el_r    = deg2rad(el_target_deg);
+d_t     = -Re_km*sin(el_r) + sqrt((Re_km*sin(el_r))^2 + h_km^2 + 2*Re_km*h_km);
+FSPL_t  = 20*log10(4*pi*(d_t*1e3)*fc_Hz/3e8);
+gamma_t = rad2deg(asin(Re_km*cos(el_r)/(Re_km + h_km)));
+Lscan_t = 12*(gamma_t/HPBW_deg)^2;
+CN0_t   = EIRP_dBW - FSPL_t - Lscan_t - L_margin_dB + GT_dBK - k_dB;
+SNR_t   = CN0_t - 10*log10(BW_Hz);
+
+fprintf('--- LEO uplink @ elevation %.1f deg ---\n', el_target_deg);
+fprintf('Slant range       : %.1f km\n', d_t);
+fprintf('EIRP              : %.2f dBW\n', EIRP_dBW);
+fprintf('FSPL              : %.2f dB\n', FSPL_t);
+fprintf('Off-nadir angle   : %.2f deg\n', gamma_t);
+fprintf('Scan loss         : %.2f dB\n', Lscan_t);
+fprintf('Array gain (NR=%d) : %.2f dB\n', NR, G_array_dB);
+fprintf('Tsys              : %.1f K\n', Tsys_K);
+fprintf('G/T               : %.2f dB/K\n', GT_dBK);
+fprintf('C/N0              : %.2f dB-Hz\n', CN0_t);
+fprintf('Received SNR      : %.2f dB\n', SNR_t);
+fprintf('\n');
+for i = 1:length(SF_list)
+    thr = SNRreq_list(i) + L_sysmargin_dB;
+    fprintf('SF%-2d  required %.1f dB (+sys %.1f = %.1f)  ->  %+.2f dB\n', ...
+        SF_list(i), SNRreq_list(i), L_sysmargin_dB, thr, SNR_t - thr);
+end

@@ -1,63 +1,93 @@
 clear; clc;
 
-Pt_mW    = 20;
-Gt       = 1.0;
-Gr0      = 6.0;
-NF       = 4.0;
-HPBW     = 80;
+Pt_dBm    = 13.0;
+Gt_dBi    = 1.0;
+Gr0_dBi   = 6.0;
+NR        = 9;
+NF_dB     = 4.0;
+HPBW_deg  = 80.0;
+BW_Hz     = 100e3;
+fc_Hz     = 920e6;
+h_km      = 540;
+Re_km     = 6371;
+T_ant_K   = 290;
+T0_K      = 290;
+k_dB      = -228.6;
 
-fontSize = 18
-;
+L_margin_dB    = 6.0;
+L_sysmargin_dB = 6.0;
 
-c_light = 3e8;
-GM  = 3.986e14;
-Re  = 6.371e6;
-fc  = 920e6;
-h   = 540e3;
-k   = 1.380649e-23;
-T0  = 290;
-BW  = 100e3;
-v_sat = sqrt(GM/(Re+h));
+FS_axis   = 14;
+FS_label  = 16;
+FS_title  = 16;
+FS_legend = 13;
+FS_yline  = 13;
+LW_curve  = 2.5;
+LW_thr    = 1.8;
 
-Pt_dBm = 10*log10(Pt_mW);
-N0     = 10*log10(k*T0*1000);
-Nf     = N0 + 10*log10(BW) + NF;
+SF_list     = [7 10 12];
+SNRreq_list = [-7.5 -15.0 -20.0];
 
-El   = linspace(1, 90, 500);
-El_r = El * pi/180;
+el_target_deg = 10;
+el_deg = linspace(5, 90, 500);
 
-d_m    = sqrt((Re+h)^2 - (Re*cos(El_r)).^2) - Re*sin(El_r);
-lambda = c_light/fc;
-FSPL   = 20*log10(4*pi*d_m/lambda);
+G_array_dB = 10*log10(NR);
+EIRP_dBW   = (Pt_dBm - 30) + Gt_dBi;
 
-L_iono = 1.0;
-L_pol  = 3.0;
+F_lin  = 10^(NF_dB/10);
+Tsys_K = T_ant_K + T0_K*(F_lin - 1);
+GT_dBK = (Gr0_dBi + G_array_dB) - 10*log10(Tsys_K);
 
-gamma_sat = asin(Re * cos(El_r) / (Re+h));
-L_scan    = 12 * (gamma_sat*180/pi / HPBW).^2;
-Gr_eff    = Gr0 - L_scan;
+el_rad  = deg2rad(el_deg);
+d_km    = -Re_km*sin(el_rad) + sqrt((Re_km*sin(el_rad)).^2 + h_km^2 + 2*Re_km*h_km);
+FSPL_dB = 20*log10(4*pi*(d_km*1e3)*fc_Hz/3e8);
 
-L_impl = 1.5;
+gamma_deg = rad2deg(asin(Re_km*cos(el_rad)/(Re_km + h_km)));
+L_scan_dB = 12*(gamma_deg/HPBW_deg).^2;
 
-fd        = (v_sat/c_light) * fc * cos(El_r);
-L_doppler = -20*log10(1 - abs(fd)/BW);
+CN0_dB = EIRP_dBW - FSPL_dB - L_scan_dB - L_margin_dB + GT_dBK - k_dB;
+SNR_dB = CN0_dB - 10*log10(BW_Hz);
 
-Pr_apcma = Pt_dBm + Gt + Gr_eff - FSPL - L_iono - L_pol - L_impl - L_doppler;
-
-SF_list = [7 10 12];
-SNR_req = [-7.5 -12.5 -15 -17.5 -20];
-Sens    = Nf + SNR_req;
-
-figure;
+figure; hold on; grid on;
+plot(el_deg, SNR_dB, 'k', 'LineWidth', LW_curve, 'DisplayName', 'Received SNR');
 colors = lines(length(SF_list));
-hold on;
 for i = 1:length(SF_list)
-    plot(El, Pr_apcma-Sens(i), 'LineWidth',1.8, 'Color',colors(i,:), 'DisplayName',sprintf('SF=%d',SF_list(i)));
+    thr = SNRreq_list(i) + L_sysmargin_dB;
+    yline(thr, '--', sprintf('SF%d', SF_list(i)), ...
+        'Color', colors(i,:), 'LineWidth', LW_thr, ...
+        'FontSize', FS_yline, ...
+        'LabelHorizontalAlignment', 'left', ...
+        'DisplayName', sprintf('SF%d threshold', SF_list(i)));
 end
 
-grid on;
-xlabel('Elevation angle [deg]', 'FontSize', fontSize);
-ylabel('Link margin [dB]', 'FontSize', fontSize);
-title('Link Margin vs Elevation Angle', 'FontSize', fontSize);
-legend('Location','best','FontSize',fontSize-2);
-hold off;
+xlabel('Elevation angle [deg]', 'FontSize', FS_label);
+ylabel('SNR [dB]', 'FontSize', FS_label);
+title('Received SNR vs elevation (920 MHz LEO uplink)', 'FontSize', FS_title);
+legend('Location', 'best', 'FontSize', FS_legend);
+set(gca, 'FontSize', FS_axis);
+
+el_r    = deg2rad(el_target_deg);
+d_t     = -Re_km*sin(el_r) + sqrt((Re_km*sin(el_r))^2 + h_km^2 + 2*Re_km*h_km);
+FSPL_t  = 20*log10(4*pi*(d_t*1e3)*fc_Hz/3e8);
+gamma_t = rad2deg(asin(Re_km*cos(el_r)/(Re_km + h_km)));
+Lscan_t = 12*(gamma_t/HPBW_deg)^2;
+CN0_t   = EIRP_dBW - FSPL_t - Lscan_t - L_margin_dB + GT_dBK - k_dB;
+SNR_t   = CN0_t - 10*log10(BW_Hz);
+
+fprintf('--- LEO uplink @ elevation %.1f deg ---\n', el_target_deg);
+fprintf('Slant range       : %.1f km\n', d_t);
+fprintf('EIRP              : %.2f dBW\n', EIRP_dBW);
+fprintf('FSPL              : %.2f dB\n', FSPL_t);
+fprintf('Off-nadir angle   : %.2f deg\n', gamma_t);
+fprintf('Scan loss         : %.2f dB\n', Lscan_t);
+fprintf('Array gain (NR=%d) : %.2f dB\n', NR, G_array_dB);
+fprintf('Tsys              : %.1f K\n', Tsys_K);
+fprintf('G/T               : %.2f dB/K\n', GT_dBK);
+fprintf('C/N0              : %.2f dB-Hz\n', CN0_t);
+fprintf('Received SNR      : %.2f dB\n', SNR_t);
+fprintf('\n');
+for i = 1:length(SF_list)
+    thr = SNRreq_list(i) + L_sysmargin_dB;
+    fprintf('SF%-2d  required %.1f dB (+sys %.1f = %.1f)  ->  %+.2f dB\n', ...
+        SF_list(i), SNRreq_list(i), L_sysmargin_dB, thr, SNR_t - thr);
+end
